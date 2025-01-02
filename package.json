@@ -51,6 +51,20 @@
       "description": "Enter the address for the second server",
       "placeholder": "smb://0.0.0.0/folder",
       "required": true
+    },
+    {
+      "name": "username",
+      "type": "textfield",
+      "title": "Username",
+      "description": "Enter the username for both servers",
+      "required": true
+    },
+    {
+      "name": "password",
+      "type": "password",
+      "title": "Password",
+      "description": "Enter the password for both servers",
+      "required": true
     }
   ]
 }

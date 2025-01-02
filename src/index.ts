@@ -4,11 +4,18 @@ import { exec } from "child_process";
 interface Preferences {
   server1: string;
   server2: string;
+  username: string;
+  password: string;
 }
 
-function connectToServer(server: string) {
+function connectToServer(server: string, username: string, password: string) {
   return new Promise((resolve, reject) => {
-    exec(`osascript -e 'mount volume "${server}"'`, (error, stdout, stderr) => {
+    // Format the connection string with authentication
+    const connectionString = server.includes("@")
+      ? server // If the server already includes credentials, use as is
+      : server.replace("smb://", `smb://${encodeURIComponent(username)}:${encodeURIComponent(password)}@`);
+
+    exec(`osascript -e 'mount volume "${connectionString}"'`, (error, stdout, stderr) => {
       if (error) {
         reject(stderr || error.message);
       } else {
@@ -19,7 +26,7 @@ function connectToServer(server: string) {
 }
 
 export default async function Command() {
-  const { server1, server2 } = getPreferenceValues<Preferences>();
+  const { server1, server2, username, password } = getPreferenceValues<Preferences>();
 
   try {
     // Close the Raycast main window immediately
@@ -28,9 +35,9 @@ export default async function Command() {
     // Display an initial animated toast while connecting
     await showToast({ style: Toast.Style.Animated, title: "Connecting to servers..." });
 
-    // Attempt to connect to both servers
-    await connectToServer(server1);
-    await connectToServer(server2);
+    // Attempt to connect to both servers with the same credentials
+    await connectToServer(server1, username, password);
+    await connectToServer(server2, username, password);
 
     // Show success message after connecting
     await showToast({ style: Toast.Style.Success, title: "Connected to both servers!" });
