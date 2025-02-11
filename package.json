@@ -50,7 +50,23 @@
       "title": "Server 2 Address",
       "description": "Enter the address for the second server",
       "placeholder": "smb://0.0.0.0/folder",
-      "required": true
+      "required": false
+    },
+    {
+      "name": "server3",
+      "type": "textfield",
+      "title": "Server 3 Address",
+      "description": "Enter the address for the second server",
+      "placeholder": "smb://0.0.0.0/folder",
+      "required": false
+    },
+    {
+      "name": "server4",
+      "type": "textfield",
+      "title": "Server 4 Address",
+      "description": "Enter the address for the second server",
+      "placeholder": "smb://0.0.0.0/folder",
+      "required": false
     },
     {
       "name": "username",
