@@ -56,7 +56,7 @@
       "name": "server3",
       "type": "textfield",
       "title": "Server 3 Address",
-      "description": "Enter the address for the second server",
+      "description": "Enter the address for the third server",
       "placeholder": "smb://0.0.0.0/folder",
       "required": false
     },
@@ -64,7 +64,7 @@
       "name": "server4",
       "type": "textfield",
       "title": "Server 4 Address",
-      "description": "Enter the address for the second server",
+      "description": "Enter the address for the fourth server",
       "placeholder": "smb://0.0.0.0/folder",
       "required": false
     },
