@@ -3,46 +3,88 @@ import { exec } from "child_process";
 
 interface Preferences {
   server1: string;
-  server2: string;
+  server2?: string;
+  server3?: string;
+  server4?: string;
   username: string;
   password: string;
 }
 
-function connectToServer(server: string, username: string, password: string) {
-  return new Promise((resolve, reject) => {
-    // Format the connection string with authentication
-    const connectionString = server.includes("@")
-      ? server // If the server already includes credentials, use as is
-      : server.replace("smb://", `smb://${encodeURIComponent(username)}:${encodeURIComponent(password)}@`);
+/**
+ * Escapes backslashes, double quotes, and single quotes so they can survive
+ * inside a single-quoted AppleScript string.
+ */
+function escapeForAppleScript(str: string) {
+  return str
+    .replace(/\\/g, "\\\\")   // Escape backslashes
+    .replace(/"/g, '\\"')     // Escape double quotes
+    .replace(/'/g, "\\'");    // Escape single quotes
+}
 
-    exec(`osascript -e 'mount volume "${connectionString}"'`, (error, stdout, stderr) => {
+/**
+ * Uses AppleScript’s "mount volume" syntax with separate user name & password.
+ * This avoids the need to embed credentials in the SMB URL (which breaks
+ * if your password ends with '@' or contains other special characters).
+ */
+function connectToServer(server: string, username: string, password: string) {
+  return new Promise<void>((resolve, reject) => {
+    // Remove any leading "smb://"
+    const cleanServer = server.replace(/^smb:\/\//, "");
+
+    // Escape credentials for AppleScript
+    const userEscaped = escapeForAppleScript(username);
+    const passEscaped = escapeForAppleScript(password);
+
+    // Use AppleScript’s "as user name … with password …" approach
+    const command = `
+      osascript -e '
+      try
+        mount volume "smb://${cleanServer}" as user name "${userEscaped}" with password "${passEscaped}"
+      on error errMsg
+        display dialog errMsg
+      end try
+      '
+    `;
+
+    exec(command, (error, stdout, stderr) => {
       if (error) {
         reject(stderr || error.message);
       } else {
-        resolve(stdout);
+        resolve();
       }
     });
   });
 }
 
 export default async function Command() {
-  const { server1, server2, username, password } = getPreferenceValues<Preferences>();
+  const preferences = getPreferenceValues<Preferences>();
 
   try {
-    // Close the Raycast main window immediately
+    // Close the main window so Raycast doesn’t hang open
     await closeMainWindow({ clearRootSearch: true });
-
-    // Display an initial animated toast while connecting
     await showToast({ style: Toast.Style.Animated, title: "Connecting to servers..." });
 
-    // Attempt to connect to both servers with the same credentials
-    await connectToServer(server1, username, password);
-    await connectToServer(server2, username, password);
+    // Gather all servers (filter out empty or undefined)
+    const servers = [
+      preferences.server1,
+      preferences.server2,
+      preferences.server3,
+      preferences.server4,
+    ].filter((s): s is string => Boolean(s));
 
-    // Show success message after connecting
-    await showToast({ style: Toast.Style.Success, title: "Connected to both servers!" });
+    // Attempt to connect to each server in sequence
+    for (const server of servers) {
+      await connectToServer(server, preferences.username, preferences.password);
+    }
+
+    // If we reach here, all connections succeeded
+    const connectedCount = servers.length;
+    await showToast({
+      style: Toast.Style.Success,
+      title: `Connected to ${connectedCount} server${connectedCount > 1 ? "s" : ""}!`,
+    });
   } catch (error) {
-    // Show failure message if connection fails
+    // Show an error toast if anything fails
     await showToast({
       style: Toast.Style.Failure,
       title: "Connection failed",
